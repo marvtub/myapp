@@ -1,0 +1,682 @@
+---
+title: "Akien-Dashboard by Marvin Aziz"
+output: 
+  flexdashboard::flex_dashboard:
+    navbar:
+      - { title: "Marvin on LinkedIn", href: "https://www.linkedin.com/in/marvin-aziz/", align: right }
+    orientation: columns
+    vertical_layout: fill
+    theme: default
+    
+---
+
+```{r setup, include=FALSE}
+
+rm(list = ls())
+library(flexdashboard)
+library(quantmod)
+library(xts)
+library(rvest)
+library(tidyverse)
+library(stringr)
+library(forcats)
+library(lubridate)
+library(plotly)
+library(dplyr)
+library(PerformanceAnalytics)
+library(tidyquant)
+library(stringr)
+library(tibble)
+library(lemon)
+library(kableExtra)
+library(purrr)
+library(rjson)
+library(rlist)
+
+```
+
+
+```{r}
+
+# Lade JSON Datei aus js-export
+
+json <- fromJSON(file = "C:\\Users\\admin\\Documents\\Alles mit JS\\DEGIRO_API\\Ergebnis\\ergebnis.json")
+logjson <- fromJSON(file ="C:\\Users\\admin\\Documents\\Alles mit JS\\DEGIRO_API\\Ergebnis\\log.json" )
+
+
+  #Lade alle Symbole aus txt
+txt_symbols <- read.csv("AKTIEN_SYMBOLE.txt", sep = ",", header = F)
+txt_symbols <- as.character(t(txt_symbols))
+
+# Funktion um HDAX Werte zu laden
+
+werte_hdax_fct <- function(x){
+
+    wert_temp <- try(na.omit(getSymbols(x, src = "yahoo", from = today() -days(260), to = today(), auto.assign = F, warnings = F)))
+
+  return(wert_temp)
+}
+# Lade und packe alle werte in die Liste
+
+# hdax_list <- list()
+# for (x in seq_along(txt_symbols)){
+#   hdax_list[[x]] <-  werte_hdax_fct(txt_symbols[x]);
+# }
+
+  hdax_list <- try(sapply(txt_symbols, werte_hdax_fct)); #### WARUM NUR MACHST DU JETZT PROBLEME?!
+  
+  help_df <- list(hdax_list$DLG.DE,hdax_list$ZAL.DE,hdax_list$MUV2.DE, hdax_list$NEM.DE, hdax_list$EVT.DE, hdax_list$LIN.DE, hdax_list$NDX1.DE )
+  
+  
+```
+
+```{r}
+### Rechenoperationen für LogJson
+
+#look for < yetserdays data
+for( x in length(logjson$Timestamp):1){
+ 
+  if( as.Date(logjson$Timestamp[[x]]) < today()){
+    
+    werte_alt <- logjson$Werte[[x]]
+    
+    break
+  }
+}
+# Berechne Performance seit letztem Tag (mindestens ein Tag vorher)
+perf_seit_gestern <- round((json$Gesamt/werte_alt-1)*100, digits = 2)
+
+
+
+```
+
+
+Übersicht
+================================
+
+
+Row {.tabset .tabset-fade data-width=650}
+------------------------------------------------
+
+
+
+### Zalando
+
+```{r}
+### Interactive Chart Line Plot
+
+stock_plot <- function(stock){
+  p_evt <- try(ggplot(hdax_list[[stock]], aes(x = index(hdax_list[[stock]]), y = hdax_list[[stock]][,4]))) +
+  geom_line(color = "darkblue") +
+  ggtitle(names(hdax_list[[stock]])[4]) +
+  xlab("Datum") + ylab("Preis") +
+  theme_bw() +
+  
+ 
+  scale_x_date(date_labels = "%b %y", date_breaks = "1 month")
+  mytext_evt=paste("Day = ", index(hdax_list[[stock]]), "\n" , "Close = ", hdax_list[[stock]][,4], "\n",   sep="")
+  pp_evt=plotly_build(p_evt)
+  style( pp_evt, text=mytext_evt, hoverinfo = "text", traces = c(1, 2) )
+ 
+  
+}
+#------------------------------LinePlot
+
+#Erstelle ein CandleStick Chart ---------------------------------------------
+candlestick_plot <- function(stock){
+  
+p <- data.frame(Date=index(hdax_list[[stock]]),coredata(hdax_list[[stock]]))
+ p <- tail(p, 180) 
+  plot <- plot_ly(p, x = ~Date, type="candlestick",
+          open = p[,2], close = p[,5],
+          high = p[,3], low = p[,4]) %>%
+  layout(title = stock,
+          xaxis = list(rangeslider = list(visible = F))
+         )  
+  return(plot)
+}
+#------------------------------------------------------------------------------
+
+
+
+
+candlestick_plot("ZAL.DE")
+
+
+
+```
+
+
+### Linde
+
+```{r}
+candlestick_plot("LIN.DE")
+
+
+```
+
+### Dialouge Semiconductor
+
+```{r, echo = FALSE}
+candlestick_plot("DLG.DE")
+
+
+```
+
+
+### Nementschek
+
+```{r}
+
+candlestick_plot("NEM.DE")
+
+```
+
+
+### Evotec
+
+```{r}
+candlestick_plot("EVT.DE")
+
+```
+
+
+### MUE RUE
+
+```{r}
+
+candlestick_plot("MUV2.DE")
+```
+
+
+### Nordex
+
+```{r}
+candlestick_plot("NDX1.DE")
+
+```
+
+
+
+
+Column
+------------------------------------------------
+
+### Depot Positionen
+
+
+```{r message = FALSE, warning = FALSE, error= FALSE}
+
+
+wert_heute <- function(x){
+  wert_temp <- c(1:101)
+  for(i in seq_along(x)){
+
+      wert_temp[i] <- tail(x[[i]][,6], n=1)  
+      
+  }
+  
+  return (wert_temp)
+}
+
+
+# bsp für EINEN wochenschlusskurs : mean(tail(dlg[,6], n = 130)[120:125])
+
+# Versuche ausschließlich die Namen in eine Liste zu packen
+tabelle_namen <- function(x){
+  
+  namen_tabelle <- tibble(.rows = 101)
+for(i in 1:101){
+  for (y in 1:101) {
+    
+  }
+  namen_tabelle[i] <- tibble(names(hdax_list[[i]][,6]))
+
+}
+namen_tabelle <- namen_tabelle[1,]
+return(namen_tabelle[x])
+}
+
+namen_tabelle <- tabelle_namen(1:101)
+
+
+# Berechnung des RSL einer Aktie ( auf zwei Nachkommestellen genau )
+
+wert_rsl <- function(x){
+    
+    wochendurchschn_bechtle <- tibble(.rows =27)
+    letzter_kurs <- tibble(.rows = 1)
+    rsl_kurse <- tibble(.rows = 1)
+    
+    
+    for(g in 1:length(x)){
+    beg <- 125
+    end <- 130
+    letzter_kurs[1,g] <- try(wert_heute(x)[[g]])
+    
+  for(i in 1:26){
+    
+    if( NA %in% x[[g]][,6]){
+      wochendurchschn_bechtle[i,g] <- "FALSCHER WERT"
+      next()
+      
+    }else{
+      wochendurchschn_bechtle[i,g] <- try(mean(as.double(unlist(tail(x[[g]][,6],130)[beg:end]))), silent = TRUE)  
+      beg <- beg - 5
+      end <- end -5
+
+    }
+  
+  }
+    wochendurchschn_bechtle[27,g] <- try( mean(as.double(unlist(wochendurchschn_bechtle[1:26,g]))) )
+    
+    rsl_kurse[1,g] <- try((as.double(unlist(letzter_kurs[1,g])))/((as.double(unlist(wochendurchschn_bechtle[27,g])))))
+    
+    }
+    return(rsl_kurse)
+    
+    
+}
+
+
+# Alle Namen bekommen
+get_names <- function(x){
+   names_temp <- seq_along(x)
+  for(i in seq_along(x)){
+   
+    
+    names_temp[i] <- names(x[[i]][,6])
+
+    }
+     return(names_temp)
+}
+
+# Alle Werte bekommen
+
+get_wert <- function(x){
+  wert_temp <- seq_along(x)
+  
+  for(i in seq_along(x)){
+    
+    wert_temp[i] <- as.double(tail(x[[i]][,6])[6])
+    
+  }
+  return(wert_temp)
+}
+
+
+# Obige Version kürzen um Tabelle zu erstellen
+werte_tabelle <- data.frame(
+  
+  Aktie = get_names(hdax_list),
+  Wert = get_wert(hdax_list),
+  RSL = try(t(wert_rsl(hdax_list)))
+)
+
+depot_tabelle <- data.frame(
+  
+  Aktie = get_names(help_df),
+  Wert = get_wert(help_df),
+  RSL = try(t(wert_rsl(help_df)))
+)
+
+
+
+# Schönes Format für alle Werte der Tabelle
+
+werte_tabelle$Wert <- format(as.numeric(werte_tabelle$Wert),trim = T)
+werte_tabelle$RSL <-  format(as.numeric(werte_tabelle$RSL),trim = T)
+
+
+depot_tabelle$Wert <- format(as.numeric(depot_tabelle$Wert),trim = T)
+depot_tabelle$RSL <-  format(as.numeric(depot_tabelle$RSL),trim = T)
+
+# #Wandle Performace (%) in Prozent um
+# werte_tabelle$Perf_1W <- sprintf("%.1f %%", 100*werte_tabelle$Perf_1W)
+# # Spucke alle RSL Werte numerisch aus 
+# werte_tabelle$RSL <- as.numeric(werte_tabelle$RSL)
+# mache eine schöne Tabelle
+for(x in seq_along(depot_tabelle$RSL)){
+  
+  depot_tabelle$RSL[x] <- ifelse("NA" %in% depot_tabelle$RSL[x],"https://www.tradesignalonline.com/scanner/default.aspx", depot_tabelle$RSL[x])
+  
+}
+
+# Function to check RSL and Color ggf---------------------------
+  
+    redrow <- NULL
+   for(i in seq_along(depot_tabelle$Aktie)){
+    
+      if(depot_tabelle[[i,3]] < 1.05){
+   redrow <- i
+  
+   break
+      
+      }
+   }
+    
+    greenrow <- NULL
+    for( i in seq_along(depot_tabelle$Aktie)) {
+      if(depot_tabelle[[i,3]] < 1.2){
+        greenrow <- i
+        
+        break
+      }
+    }
+    
+#---------------------------------------------------------------- Color
+    
+    
+    
+depot_tabelle <- depot_tabelle[order(depot_tabelle$RSL, decreasing = T),]
+depot_tabelle <- depot_tabelle[order(depot_tabelle$RSL, decreasing = T),] 
+
+knitr::kable(depot_tabelle) %>%
+kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+row_spec(redrow:7, bold = T, color = "white", background = "#D7261E") %>% # RED
+row_spec(1:(greenrow), bold = T, color = "black", background = "#24b548") %>% #GREEN
+row_spec((greenrow+1):(redrow-1), bold = T, color = "black", background = "#f6f94a") # YELLOW 
+  
+
+```
+### Übersicht Degiro
+
+```{r}
+
+# Übersicht über Orders ------------------------------------------------
+if(is.null(unlist(json$Orders[[1]]$openOrders))){ openOrders <- "Keine"
+}else{
+  openOrders <- unlist(json$Orders[[1]]$openOrders)
+}
+
+if(is.null(unlist(json$Orders[[1]]$cancelledOrders))){ cancelledOrders<- "Keine"
+}else{
+  cancelledOrders <-unlist(json$Orders[[1]]$cancelledOrders)
+}
+
+if(is.null(unlist(json$Orders[[1]]$completedOrders))){ completedOrders <- "Keine"
+}else{
+  completedOrders <-unlist(json$Orders[[1]]$completedOrders)
+}
+
+
+
+order_Table <- data.frame(
+  
+  Open_Orders = openOrders,
+  Cancelled_Orders = cancelledOrders,
+  Completed_Orders = completedOrders
+)
+
+order_Table %>%
+knitr::kable() %>%
+kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+#----------------------------------------------------------------------------------------------
+# Übersicht Portfolio
+
+# GetNames für JSON----------
+
+getNamesJSON <- function(x){
+  
+  temp_name <- seq_along(x$name)
+  
+  for(i in seq_along(x$name)){
+    temp_name[i] <- x$name[i]
+  }
+  
+  return (temp_name)
+}
+#------------------------------
+
+# GetWert JSON -----------------
+
+getWertJSON <- function(x){
+  
+  temp_wert <- seq_along(x$Gesamt)
+  
+  for(i in seq_along(x$Gesamt)){
+    temp_wert[i] <- x$Gesamt[i]
+  }
+  
+  return (temp_wert)
+}
+
+#------------------------------
+# GetPerformance JSON-------------
+
+getPerformanceJSON <- function(x){
+  
+  temp_wert <- seq_along(x$Gesamt)
+  
+  for(i in seq_along(x$Gesamt)){
+    temp_wert[i] <- round(x$'G/V'[i], digits = 2)
+  }
+  
+  return (temp_wert)
+} 
+#-----------------------------------
+
+# GetAnzahl JSON-------------
+
+getAnzahlJSON <- function(x){
+  
+  temp_wert <- seq_along(x$Gesamt)
+  
+  for(i in seq_along(x$Gesamt)){
+    temp_wert[i] <- round(x$Anzahl[i], digits = 0)
+  }
+  
+  return (temp_wert)
+} 
+#-----------------------------------
+
+
+# Erstelle Tabelle
+degiro_table <- data.frame(
+  
+  Name = getNamesJSON(json),
+  Anzahl = getAnzahlJSON(json),
+  'Depot_Wert' = paste(getWertJSON(json), '€'),
+  'G/V current PF' = paste(getPerformanceJSON(json), '€'),
+  '1D Perf' = paste(perf_seit_gestern, '%')
+  
+)
+# Entferne letzten Eintrag, da bereits visualisiert
+degiro_table <- degiro_table[1:7,]
+
+
+# Tabelle schön darstellen
+degiro_table %>%
+knitr::kable() %>%
+kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+```
+
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+### Gesamtwert Depot
+
+```{r}
+
+
+  invested <-sum(json$Gesamt);
+  verfuegbar <- json$Gesamt[8];
+
+
+gesamt <- invested + verfuegbar
+
+
+gauge((invested), min = 0, max = gesamt, symbol = '€', gaugeSectors(
+      success = c((gesamt*0.7), (gesamt)), warning = c((gesamt*0.55), (gesamt*0.69)), danger = c(0, (gesamt*0.54))
+))
+```
+
+
+### Investiertes Geld
+
+```{r}
+
+anteil_investiert <- round(invested/gesamt *100, digits = 1)
+
+gauge(anteil_investiert, min = 0, max = 100, symbol = '%', gaugeSectors(
+      success = c(80, 95), warning = c(40, 79), danger = c(0, 39)
+))
+```
+
+### Cash
+
+```{r}
+
+
+gauge(round(verfuegbar, digits=2), min = 0, max = gesamt, symbol = '€', gaugeSectors(
+      success = c(0, 400), warning = c(401, 2000), danger = c(2001, 4000)
+))
+```
+
+### Hinweise
+Folgende Aktien solltest du ende des Monats verkaufen:
+
+```{r, echo = FALSE}
+
+# Syntax um Depot zu überprüfen nach der Realtive Stärke Strategie nach Levy: INITAL: TOP 7 RSL Werte kaufen, monatlich auf folgende Kriterien überrüfen: Platzierung > 76, RSL > 1, SMA > SMA2 ansonsten -> VERKAUF bzw Warnhinweis
+for(i in 1:7){
+  
+  if(depot_tabelle[[i,3]] < 1){
+    print(depot_tabelle[[i,1]]) %>%
+    knitr::kable() %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+    
+  }else if(depot_tabelle[[i,3]] < 1.05){
+    
+    print(unlist(paste(depot_tabelle[[i,1]]," -> ACHTUNG, bald solltest du evtl. verkaufen.")))
+  }
+  
+  else{
+    next();
+  }
+  
+}
+
+
+
+``` 
+
+
+
+HDAX Werte
+================================
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### HDAX Top 70
+
+```{r message=FALSE, warning = FALSE, error= FALSE}
+
+
+  
+  werte_tabelle <- werte_tabelle[order(werte_tabelle$RSL, decreasing = T),]
+  werte_tabelle <- as.data.frame(werte_tabelle, row.names = 1:101) 
+
+  for(x in seq_along(werte_tabelle$RSL)){
+  
+  werte_tabelle$RSL[x] <- ifelse("NA" %in% werte_tabelle$RSL[x],"https://www.tradesignalonline.com/scanner/default.aspx", werte_tabelle$RSL[x])
+  
+}
+  
+werte_tabelle %>%
+
+knitr::kable() %>%
+kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+
+
+
+
+
+
+```
+
+
+Line-Charts
+================================
+
+
+Row {.tabset .tabset-fade data-width=650}
+------------------------------------------------
+
+### Linde
+
+```{r}
+stock_plot("LIN.DE")
+
+
+```
+
+### Dialouge Semiconductor
+
+```{r, echo = FALSE}
+stock_plot("DLG.DE")
+
+
+```
+
+
+### Nementschek
+
+```{r}
+
+stock_plot("NEM.DE")
+
+```
+
+
+### Evotec
+
+```{r}
+stock_plot("EVT.DE")
+
+```
+
+### Zalando
+
+```{r}
+stock_plot("ZAL.DE")
+
+
+
+```
+
+
+### MUE RUE
+
+```{r}
+
+stock_plot("MUV2.DE")
+```
+
+
+### Nordex
+
+```{r}
+stock_plot("NDX1.DE")
+
+```
+
+
+Portfolio-Entwicklung
+================================
+
+### Degiro Depot
+```{r}
+### Lese alle Daten aus dem Log um Chart im zeitverlauf zu erstellen
+
+
+
+
+
+
+```

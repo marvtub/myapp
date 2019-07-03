@@ -673,10 +673,26 @@ Portfolio-Entwicklung
 ### Degiro Depot
 ```{r}
 ### Lese alle Daten aus dem Log um Chart im zeitverlauf zu erstellen
+#Erstelle benoetigte Tabelle--------------------------------------
+zeit_werte <- tibble('Wert', 'Erstellt am', .rows = 400)
+names(zeit_werte) <- c('Wert', 'Erstellt am')
+zeit_werte$`Erstellt am` <- NA
 
+for( x in 1:length(logjson$Werte)){
+  
+  zeit_werte$Wert[[x]] <-  round(sum(logjson$Werte[[x]]), digits = 2)
+  zeit_werte$`Erstellt am`[[x]] <- logjson$Timestamp[[x]]
+}
+zeit_werte <- filter(zeit_werte, !is.na(zeit_werte$`Erstellt am`))
 
+#Erstelle Plot
+#-------------------------------------------------------------------
 
-
-
+degiro_plot1 <- plot_ly(data = zeit_werte, x = ~ymd_hms(`Erstellt am`), y = ~Wert, type = 'scatter', mode = 'markers + lines', name = "Depot Degiro" ) %>%
+  layout(title = "Zeitlicher Verlauf des Degiro Depots",
+         xaxis = list(type = 'date',
+                      title = "Zeitpunkt"),
+         yaxis = list (title = "Wert in €"))
+degiro_plot1
 
 ```

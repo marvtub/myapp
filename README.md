@@ -1,3 +1,2 @@
-# myapp
-
-This is my App.
+# Krimskrams
+finance stuff

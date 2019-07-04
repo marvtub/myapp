@@ -132,7 +132,9 @@ p <- data.frame(Date=index(hdax_list[[stock]]),coredata(hdax_list[[stock]]))
           high = p[,3], low = p[,4]) %>%
   layout(title = stock,
           xaxis = list(rangeslider = list(visible = F))
-         )  
+         ) %>%
+    add_lines(x = ~Date, y = p[,2], line = list(color = 'black', width = 0.75), inherit = F) %>%
+  layout(showlegend = FALSE)
   return(plot)
 }
 #------------------------------------------------------------------------------

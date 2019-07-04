@@ -345,25 +345,55 @@ for(x in seq_along(depot_tabelle$RSL)){
 }
 
 # Function to check RSL and Color ggf---------------------------
-  
-    redrow <- NULL
+  redRowfct <- function(.x, ...) {
+    
+    redrow <- 7
    for(i in seq_along(depot_tabelle$Aktie)){
     
       if(depot_tabelle[[i,3]] < 1.05){
    redrow <- i
-  
-   break
+  return(row_spec(redrow:7, bold = T, color = "white", background = "#D7261E"))
+   
       
+      }else{
+        return(row_spec(.x,redrow:7, bold = F, color = "black", background = "white"))
       }
-   }
+   }  
     
-    greenrow <- NULL
+  }
+  
+    greenRowfct <- function(.x, ...){
+      
+    greenrow <- 1
     for( i in seq_along(depot_tabelle$Aktie)) {
       if(depot_tabelle[[i,3]] < 1.2){
         greenrow <- i
+      
+        return(row_spec(.x, 1:(greenrow), bold = T, color = "black", background = "#24b548"))
+      }else if(depot_tabelle[[i,3]] == "https://www.tradesignalonline.com/scanner/default.aspx") {
         
-        break
+       next()
+      }else if(depot_tabelle[[i,3]] < 1.19){
+        return(.x)
       }
+    }  
+      
+    }
+    
+    yellowRowfct <- function(.x,...){
+      
+      for (i in seq_along(depot_tabelle$Aktie)) {
+      if(depot_tabelle[[i,3]] < 1.19 && depot_tabelle[[i,3]] > 1.05){
+        
+        return(row_spec(.x, (i+1):(i-1), bold = T, color = "black", background = "#f6f94a"))
+        
+      }else if(depot_tabelle[[i,3]] == "https://www.tradesignalonline.com/scanner/default.aspx") {
+        
+       next()
+      }    
+      }
+      
+    
     }
     
 #---------------------------------------------------------------- Color
@@ -375,9 +405,9 @@ depot_tabelle <- depot_tabelle[order(depot_tabelle$RSL, decreasing = T),]
 
 knitr::kable(depot_tabelle) %>%
 kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
-row_spec(redrow:7, bold = T, color = "white", background = "#D7261E") %>% # RED
-row_spec(1:(greenrow), bold = T, color = "black", background = "#24b548") %>% #GREEN
-row_spec((greenrow+1):(redrow-1), bold = T, color = "black", background = "#f6f94a") # YELLOW 
+redRowfct() %>%
+greenRowfct() %>%
+yellowRowfct() # YELLOW 
   
 
 ```

@@ -720,7 +720,7 @@ zeit_werte <- filter(zeit_werte, !is.na(zeit_werte$`Erstellt am`))
 #Erstelle Plot
 #-------------------------------------------------------------------
 
-degiro_plot1 <- plot_ly(data = zeit_werte, x = ~ymd_hms(`Erstellt am`), y = ~Wert, type = 'scatter', mode = 'markers + lines', name = "Depot Degiro" ) %>%
+degiro_plot1 <- plot_ly(data = zeit_werte, x = ~ymd_hms(`Erstellt am`), y = ~Wert, type = 'scatter', mode = 'markers ', name = "Depot Degiro" ) %>%
   layout(title = "Zeitlicher Verlauf des Degiro Depots",
          xaxis = list(type = 'date',
                       title = "Zeitpunkt"),

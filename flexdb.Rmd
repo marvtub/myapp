@@ -65,7 +65,7 @@ werte_hdax_fct <- function(x){
 
   hdax_list <- try(sapply(txt_symbols, werte_hdax_fct)); #### WARUM NUR MACHST DU JETZT PROBLEME?!
   
-  help_df <- list(hdax_list$DLG.DE,hdax_list$ZAL.DE,hdax_list$MUV2.DE, hdax_list$NEM.DE, hdax_list$EVT.DE, hdax_list$LIN.DE, hdax_list$NDX1.DE )
+  help_df <- list(hdax_list$DLG.DE,hdax_list$ZAL.DE,hdax_list$MUV2.DE, hdax_list$NEM.DE, hdax_list$EVT.DE, hdax_list$LIN.DE, hdax_list$COP.DE )
   
   
 ```
@@ -191,10 +191,10 @@ candlestick_plot("MUV2.DE")
 ```
 
 
-### Nordex
+### Compugroup
 
 ```{r}
-candlestick_plot("NDX1.DE")
+candlestick_plot("COP.DE")
 
 ```
 
@@ -415,6 +415,9 @@ yellowRowfct() # YELLOW
 
 ```{r}
 
+completedOrders <- c()
+
+
 # Übersicht über Orders ------------------------------------------------
 if(is.null(unlist(json$Orders[[1]]$openOrders))){ openOrders <- "Keine"
 }else{
@@ -428,7 +431,10 @@ if(is.null(unlist(json$Orders[[1]]$cancelledOrders))){ cancelledOrders<- "Keine"
 
 if(is.null(unlist(json$Orders[[1]]$completedOrders))){ completedOrders <- "Keine"
 }else{
-  completedOrders <-unlist(json$Orders[[1]]$completedOrders)
+  for(x in 1:length(json$Orders[[1]]$completedOrders)){
+  completedOrders[x] <-paste(json$Orders[[1]]$completedOrders[[x]]$product, json$Orders[[1]]$completedOrders[[x]]$quantity)
+  }
+ 
 }
 
 
@@ -691,10 +697,10 @@ stock_plot("MUV2.DE")
 ```
 
 
-### Nordex
+### Compugroup
 
 ```{r}
-stock_plot("NDX1.DE")
+stock_plot("COP.DE")
 
 ```
 

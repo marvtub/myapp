@@ -65,7 +65,7 @@ werte_hdax_fct <- function(x){
 
   hdax_list <- try(sapply(txt_symbols, werte_hdax_fct)); #### WARUM NUR MACHST DU JETZT PROBLEME?!
   
-  help_df <- list(hdax_list$DLG.DE,hdax_list$ZAL.DE,hdax_list$MUV2.DE, hdax_list$NEM.DE, hdax_list$EVT.DE, hdax_list$LIN.DE, hdax_list$COP.DE )
+  help_df <- list(hdax_list$DLG.DE,hdax_list$ZAL.DE,hdax_list$AFX.DE, hdax_list$MTX.DE, hdax_list$PUM.DE, hdax_list$LIN.DE, hdax_list$RIB.DE )
   
   
 ```
@@ -166,28 +166,28 @@ candlestick_plot("DLG.DE")
 ```
 
 
-### Nementschek
+### Carl Zeiss
 
 ```{r}
 
-candlestick_plot("NEM.DE")
+candlestick_plot("AFX.DE")
 
 ```
 
 
-### Evotec
+### MTU Aero Engines Na
 
 ```{r}
-candlestick_plot("EVT.DE")
+candlestick_plot("MTX.DE")
 
 ```
 
 
-### MUE RUE
+### RIB Software
 
 ```{r}
 
-candlestick_plot("MUV2.DE")
+candlestick_plot("RSTA.DE")
 ```
 
 

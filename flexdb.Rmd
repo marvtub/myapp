@@ -187,14 +187,15 @@ candlestick_plot("MTX.DE")
 
 ```{r}
 
-candlestick_plot("RSTA.DE")
+candlestick_plot("RIB.DE")
+
 ```
 
 
-### Compugroup
+### Puma
 
 ```{r}
-candlestick_plot("COP.DE")
+candlestick_plot("PUM.DE")
 
 ```
 
